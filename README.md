@@ -70,7 +70,8 @@ Log out and choose **LXQt (Wayland)** in SDDM.
 | Print / Shift+Print / Ctrl+Print | Same three, for keyboards with a Print key |
 | Super+U / I / J / K | Snap window to top-left / top-right / bottom-left / bottom-right quarter (press again to restore) |
 | Super+C | Centre the window at 80% size |
-| Super+Arrows | Snap to left/right half, maximise, restore |
+| Super+Arrows | Snap to left / right / top / bottom half |
+| Super+A | Toggle maximise |
 
 Dragging also snaps, FancyZones-style: drop a window on a screen edge for a half,
 in a corner for a quarter, at the top to maximise. Hold Ctrl, Alt, Shift or Super

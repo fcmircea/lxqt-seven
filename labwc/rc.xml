@@ -303,6 +303,22 @@
     <keybind key="W-S-g">
       <action name="Execute" command="lxqt-qdbus run screengrab" />
     </keybind>
+    <!-- Snap active window to quarters/center (FancyZones-style), keypad-free for 65% keyboards -->
+    <keybind key="W-u">
+      <action name="ToggleSnapToRegion" region="top-left" />
+    </keybind>
+    <keybind key="W-i">
+      <action name="ToggleSnapToRegion" region="top-right" />
+    </keybind>
+    <keybind key="W-j">
+      <action name="ToggleSnapToRegion" region="bottom-left" />
+    </keybind>
+    <keybind key="W-k">
+      <action name="ToggleSnapToRegion" region="bottom-right" />
+    </keybind>
+    <keybind key="W-c">
+      <action name="ToggleSnapToRegion" region="center" />
+    </keybind>
     <keybind key="W-l">
       <action name="Execute" command="lxqt-leave --lockscreen" />
     </keybind>

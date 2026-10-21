@@ -34,7 +34,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 Requires LXQt's minimal pieces:
 
 ```bash
-sudo apt install --no-install-recommends lxqt-core lxqt-wayland-session labwc wlr-randr screengrab grim slurp wl-clipboard python3-pil
+sudo apt install --no-install-recommends lxqt-core lxqt-wayland-session labwc wlr-randr qtxdg-tools screengrab grim slurp wl-clipboard python3-pil
 ```
 
 Then, as your user:
@@ -68,6 +68,13 @@ Log out and choose **LXQt (Wayland)** in SDDM.
 | Super+Shift+F | Full-screen screenshot, saved and copied |
 | Super+Shift+G | ScreenGrab app |
 | Print / Shift+Print / Ctrl+Print | Same three, for keyboards with a Print key |
+| Super+U / I / J / K | Snap window to top-left / top-right / bottom-left / bottom-right quarter (press again to restore) |
+| Super+C | Centre the window at 80% size |
+| Super+Arrows | Snap to left/right half, maximise, restore |
+
+Dragging also snaps, FancyZones-style: drop a window on a screen edge for a half,
+in a corner for a quarter, at the top to maximise. Hold Ctrl, Alt, Shift or Super
+while dragging to see and pick the predefined zones (`<regions>` in `labwc/rc.xml`).
 
 ## Firefox
 

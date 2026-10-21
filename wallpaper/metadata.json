@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Id": "Next-4K",
+    "Name": "Next (3840x2160)",
+    "License": "CC-BY-SA-4.0",
+    "Authors": [
+      {
+        "Name": "Krystian Zajdel"
+      }
+    ]
+  }
+}

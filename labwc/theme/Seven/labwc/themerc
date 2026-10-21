@@ -1,0 +1,54 @@
+# Seven: Windows 7-style dark glass title bars, matching the LXQt "seven" panel theme
+
+border.width: 1
+padding.height: 4
+window.label.text.justify: center
+window.button.width: 30
+window.button.spacing: 2
+window.button.hover.bg.corner-radius: 3
+
+# active window: blue-grey glass gradient (same tones as the panel)
+window.active.border.color: #3a5574
+window.active.title.bg: Gradient SplitVertical
+window.active.title.bg.color: #4f6c8e
+window.active.title.bg.color.splitTo: #6683a6
+window.active.title.bg.colorTo: #2c3f57
+window.active.title.bg.colorTo.splitTo: #24344a
+window.active.label.text.color: #ffffff
+window.active.button.unpressed.image.color: #ffffff
+window.active.button.close.unpressed.image.color: #ffd2cc
+
+# inactive window: flat Breeze Dark
+window.inactive.border.color: #2a2e33
+window.inactive.title.bg: Solid
+window.inactive.title.bg.color: #2a2e33
+window.inactive.label.text.color: #9aa3ad
+window.inactive.button.unpressed.image.color: #9aa3ad
+
+# compositor menus (desktop right-click, window menu) like the LXQt context menu
+menu.overlap.x: 0
+menu.overlap.y: 0
+menu.width.min: 20
+menu.width.max: 260
+menu.border.width: 1
+menu.border.color: #3a4048
+menu.items.bg.color: #202326
+menu.items.text.color: #fcfcfc
+menu.items.active.bg.color: #1e5f8a
+menu.items.active.text.color: #ffffff
+menu.items.padding.x: 8
+menu.items.padding.y: 5
+menu.separator.width: 1
+menu.separator.padding.width: 6
+menu.separator.padding.height: 3
+menu.separator.color: #3a4048
+menu.title.bg.color: #2c3f57
+menu.title.text.color: #ffffff
+
+# on-screen display (Alt+Tab switcher)
+osd.bg.color: #202326
+osd.border.color: #3a5574
+osd.border.width: 1
+osd.label.text.color: #fcfcfc
+osd.window-switcher.style-classic.item.active.bg.color: #1e5f8a
+osd.window-switcher.style-classic.item.active.border.color: #2a7db3

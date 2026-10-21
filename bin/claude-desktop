@@ -1,0 +1,8 @@
+#!/bin/sh
+# Outside Plasma, Electron can't detect a keyring and disables safeStorage.
+# Point it at the same KWallet that Plasma uses so stored tokens work in both sessions.
+case "$XDG_CURRENT_DESKTOP" in
+  *KDE*) ;;
+  *) set -- --password-store=kwallet6 "$@" ;;
+esac
+exec /usr/bin/claude-desktop "$@"

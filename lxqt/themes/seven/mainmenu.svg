@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="body" cx="50%" cy="62%" r="55%">
+      <stop offset="0" stop-color="#8fd3ff"/>
+      <stop offset="0.45" stop-color="#2f8fe0"/>
+      <stop offset="0.85" stop-color="#114a9c"/>
+      <stop offset="1" stop-color="#0a2c63"/>
+    </radialGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="100%" r="60%">
+      <stop offset="0" stop-color="#9ff0ff" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#9ff0ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="#061a3a"/>
+  <circle cx="32" cy="32" r="28.5" fill="url(#body)"/>
+  <circle cx="32" cy="32" r="28.5" fill="url(#glow)"/>
+  <path d="M32 18 L35 29 L46 32 L35 35 L32 46 L29 35 L18 32 L29 29 Z" fill="#ffffff" fill-opacity="0.95"/>
+  <ellipse cx="32" cy="19" rx="21" ry="12" fill="url(#gloss)"/>
+  <circle cx="32" cy="32" r="28.5" fill="none" stroke="#bfe6ff" stroke-opacity="0.5" stroke-width="1"/>
+</svg>

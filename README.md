@@ -21,11 +21,12 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `lxqt/session.conf` | Uses labwc as the compositor and skips LXQt's first-run compositor picker |
 | `labwc/theme/Seven/` | labwc title bars to match: gradient active title, flat grey inactive, dark menus and Alt+Tab |
 | `labwc/rc.xml` | LXQt's default labwc config, set to the Seven theme with breeze-dark icons, plus screenshot shortcuts |
-| `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below) |
+| `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below); starts `notify-follow-tray` |
 | `pcmanfm-qt/settings.conf.in` | Desktop wallpaper setting |
 | `wallpaper/make-next-4k.py` | Generates a 3840x2160 copy of KDE's "Next" wallpaper (Plasma otherwise loads the 5120x2880 one on 4K) |
 | `bin/snip` | Snipping-tool style screenshots with `grim` + `slurp`, saved to `~/Pictures/Screenshots` and copied to the clipboard |
 | `bin/claude-desktop` | Wrapper that gives the Claude desktop app KWallet access outside Plasma (Electron otherwise disables encrypted storage) |
+| `bin/notify-follow-tray` | Puts notifications in the screen corner next to the system tray, worked out from `panel.conf` (panel edge, and which end the tray sits at), and moves them again whenever the panel changes. `--watch` needs `inotify-tools`. A notification already on screen stays where it is: lxqt-notificationd reads the placement only when its area appears |
 | `bin/de-measure.sh` | Logs iGPU/NVIDIA memory, iGPU load and desktop RAM per session, for comparing desktops |
 | `system/61-amd-igpu.rules` | udev rule creating a stable `/dev/dri/amd-igpu` symlink (optional, needs root) |
 
@@ -34,7 +35,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 Requires LXQt's minimal pieces:
 
 ```bash
-sudo apt install --no-install-recommends lxqt-core lxqt-wayland-session labwc wlr-randr qtxdg-tools screengrab grim slurp wl-clipboard python3-pil
+sudo apt install --no-install-recommends lxqt-core lxqt-wayland-session labwc wlr-randr qtxdg-tools screengrab grim slurp wl-clipboard python3-pil inotify-tools
 ```
 
 Then, as your user:

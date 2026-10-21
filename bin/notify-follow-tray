@@ -1,0 +1,76 @@
+#!/bin/bash
+# Put LXQt notifications in the screen corner next to the panel's system tray.
+# Usage: notify-follow-tray            set placement once
+#        notify-follow-tray --watch    and again whenever panel.conf changes
+#                                      (labwc autostart; needs inotify-tools)
+# lxqt-notificationd picks up the new placement without a restart.
+set -u
+CONF="$HOME/.config/lxqt"
+PANEL="$CONF/panel.conf"
+NOTIF="$CONF/notifications.conf"
+
+# Prints top-left|top-right|bottom-left|bottom-right, or nothing if no panel has a tray.
+# The tray sits at the panel's far end when it is right-aligned, or when an
+# expanding plugin (the taskbar, an expandable spacer) comes before it on the
+# left: the expander pushes everything after it to the end.
+placement() {
+    awk -F= '
+        /^\[/ { sec = substr($0, 2, length($0) - 2); next }
+        { key = $1; val = substr($0, length($1) + 2); v[sec "/" key] = val }
+        END {
+            for (p = 1; ("panel" p "/plugins") in v; p++) {
+                n = split(v["panel" p "/plugins"], names, /, */)
+                expander = 0
+                for (i = 1; i <= n; i++) {
+                    name = names[i]
+                    type = (name "/type") in v ? v[name "/type"] : name
+                    align = (name "/alignment") in v ? v[name "/alignment"] : "Left"
+                    if (type == "tray" || type == "statusnotifier") {
+                        far = (align == "Right" || expander)
+                        pos = v["panel" p "/position"]
+                        if (pos == "") pos = "Bottom"
+                        if (pos == "Top")    print far ? "top-right" : "top-left"
+                        if (pos == "Bottom") print far ? "bottom-right" : "bottom-left"
+                        if (pos == "Left")   print far ? "bottom-left" : "top-left"
+                        if (pos == "Right")  print far ? "bottom-right" : "top-right"
+                        exit
+                    }
+                    if (align != "Right" && (type == "taskbar" || (type == "spacer" && v[name "/expandable"] == "true")))
+                        expander = 1
+                }
+            }
+        }' "$PANEL"
+}
+
+apply() {
+    [ -f "$PANEL" ] || return
+    local want
+    want=$(placement)
+    [ -n "$want" ] || return
+    [ -f "$NOTIF" ] && grep -qx "placement=$want" "$NOTIF" && return
+    mkdir -p "$CONF"
+    local src="$NOTIF"
+    [ -f "$src" ] || src=/dev/null
+    # Set placement= under [General], keeping every other key.
+    awk -v want="$want" '
+        /^\[/ { if (gen && !done) { print "placement=" want; done = 1 } gen = ($0 == "[General]") }
+        gen && /^placement=/ { if (!done) print "placement=" want; done = 1; next }
+        { print }
+        END {
+            if (!done && gen) print "placement=" want
+            else if (!done) { print "[General]"; print "placement=" want }
+        }' "$src" > "$NOTIF.new"
+    mv "$NOTIF.new" "$NOTIF"
+    echo "notifications: $want"
+}
+
+apply
+[ "${1:-}" = --watch ] || exit 0
+
+command -v inotifywait >/dev/null || { echo "notify-follow-tray: --watch needs inotify-tools" >&2; exit 1; }
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/notify-follow-tray.lock"
+flock -n 9 || exit 0  # one watcher per session
+# lxqt-panel saves by writing a temporary file and renaming it, so watch the directory.
+inotifywait -q -m -e close_write,moved_to --format %f "$CONF" | while read -r f; do
+    [ "$f" = panel.conf ] && apply
+done

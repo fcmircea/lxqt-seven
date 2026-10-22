@@ -19,7 +19,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `lxqt/lxqt.conf` | Breeze Dark palette (`#202326` window, `#2a7db3` selection), Breeze widget style, breeze-dark icons |
 | `lxqt/panel.conf.in` | Panel layout: start menu, Quick Launch (Claude, QTerminal, file manager), grouped icon-only taskbar, tray, clock, show-desktop. No desktop switcher |
 | `lxqt/session.conf.in` | Uses labwc as the compositor, skips LXQt's first-run compositor picker, and points the panel at `~/.local/lib/lxqt-panel` for the plugin below |
-| `labwc/theme/Seven/` | labwc title bars to match: gradient active title, flat grey inactive, dark menus and Alt+Tab |
+| `labwc/theme/Seven/` | labwc title bars to match: gradient active title, flat grey inactive, dark menus and Alt+Tab. The `.xbm` button glyphs are 8x8, about 30% larger than labwc's built-in 6x6 ones; themerc has no size key, so the bitmap size is the control, and the themerc colours still apply |
 | `labwc/rc.xml` | LXQt's default labwc config, set to the Seven theme with breeze-dark icons, plus screenshot shortcuts and the mouse speed (machine-specific, see below) |
 | `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below); starts `notify-follow-tray` |
 | `pcmanfm-qt/settings.conf.in` | Desktop wallpaper setting |

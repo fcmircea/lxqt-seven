@@ -42,7 +42,9 @@ put_template "$REPO/lxqt/panel.conf.in" "$HOME/.config/lxqt/panel.conf"
 put_template "$REPO/pcmanfm-qt/settings.conf.in" "$HOME/.config/pcmanfm-qt/lxqt/settings.conf"
 
 echo "==> labwc theme and config"
-put "$REPO/labwc/theme/Seven/labwc/themerc" "$HOME/.local/share/themes/Seven/labwc/themerc"
+for f in "$REPO"/labwc/theme/Seven/labwc/*; do
+    put "$f" "$HOME/.local/share/themes/Seven/labwc/$(basename "$f")"
+done
 for f in rc.xml autostart environment menu.xml themerc-override; do
     put "$REPO/labwc/$f" "$HOME/.config/labwc/$f"
 done

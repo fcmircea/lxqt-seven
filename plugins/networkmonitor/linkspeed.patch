@@ -1,0 +1,69 @@
+--- a/plugin-networkmonitor/lxqtnetworkmonitor.h
++++ b/plugin-networkmonitor/lxqtnetworkmonitor.h
+@@ -51,6 +51,7 @@
+ 
+ private:
+     static QString convertUnits(double num);
++    static QString linkSpeed(const QString &interface);
+     QString iconName(const QString& state) const
+     {
+         return QStringLiteral(":/images/knemo-%1-%2.png")
+--- a/plugin-networkmonitor/lxqtnetworkmonitor.cpp
++++ b/plugin-networkmonitor/lxqtnetworkmonitor.cpp
+@@ -157,6 +157,7 @@
+             if (m_interface == QString::fromLocal8Bit(network_stats->interface_name))
+             {
+                 setToolTip(tr("Network interface <b>%1</b>").arg(m_interface) + QStringLiteral("<br>")
++                           + linkSpeed(m_interface) + QStringLiteral("<br>")
+                            + tr("Transmitted %1").arg(convertUnits(network_stats->tx)) + QStringLiteral("<br>")
+                            + tr("Received %1").arg(convertUnits(network_stats->rx))
+                           );
+@@ -212,3 +213,48 @@
+     }
+     return QString::number(num, 'f', 2) + QLatin1Char(' ') + unit;
+ }
++
++QString LXQtNetworkMonitor::linkSpeed(const QString &interface)
++{
++#ifdef STATGRAB_NEWER_THAN_0_90
++    size_t count;
++    size_t x;
++#else
++    int count;
++    int x;
++#endif
++    sg_network_iface_stats *stats = sg_get_network_iface_stats(&count);
++
++    for (x = 0; x < count; x++)
++    {
++        if (interface != QString::fromLocal8Bit(stats[x].interface_name))
++            continue;
++
++        if (stats[x].up != SG_IFACE_UP)
++            return tr("Link down");
++
++        // ethtool reports SPEED_UNKNOWN (-1) for links that negotiated nothing, e.g. Wi-Fi
++        if (stats[x].speed == 0 || stats[x].speed >= 0xFFFFFFFF)
++            return tr("Link speed unknown");
++
++#ifdef STATGRAB_NEWER_THAN_0_90
++        double mbps = double(stats[x].speed) * stats[x].factor / 1000000;
++#else
++        double mbps = stats[x].speed;
++#endif
++        QString speed = mbps >= 1000
++            ? QString::number(mbps / 1000, 'g', 3) + QStringLiteral(" Gbit/s")
++            : QString::number(mbps, 'g', 4) + QStringLiteral(" Mbit/s");
++
++        QString duplex;
++        if (stats[x].duplex == SG_IFACE_DUPLEX_FULL)
++            duplex = tr("full duplex");
++        else if (stats[x].duplex == SG_IFACE_DUPLEX_HALF)
++            duplex = tr("half duplex");
++
++        return duplex.isEmpty() ? tr("Link speed %1").arg(speed)
++                                : tr("Link speed %1, %2").arg(speed, duplex);
++    }
++
++    return tr("Link speed unknown");
++}

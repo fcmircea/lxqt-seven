@@ -18,7 +18,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `lxqt/themes/dark-code/` | Plainer dark panel theme with a blue accent (the stock "dark" theme with its red accent swapped out) |
 | `lxqt/lxqt.conf` | Breeze Dark palette (`#202326` window, `#2a7db3` selection), Breeze widget style, breeze-dark icons |
 | `lxqt/panel.conf.in` | Panel layout: start menu, Quick Launch (Claude, QTerminal, file manager), grouped icon-only taskbar, tray, clock, show-desktop. No desktop switcher |
-| `lxqt/session.conf` | Uses labwc as the compositor and skips LXQt's first-run compositor picker |
+| `lxqt/session.conf.in` | Uses labwc as the compositor, skips LXQt's first-run compositor picker, and points the panel at `~/.local/lib/lxqt-panel` for the plugin below |
 | `labwc/theme/Seven/` | labwc title bars to match: gradient active title, flat grey inactive, dark menus and Alt+Tab |
 | `labwc/rc.xml` | LXQt's default labwc config, set to the Seven theme with breeze-dark icons, plus screenshot shortcuts |
 | `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below); starts `notify-follow-tray` |
@@ -27,6 +27,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `bin/snip` | Snipping-tool style screenshots with `grim` + `slurp`, saved to `~/Pictures/Screenshots` and copied to the clipboard |
 | `bin/claude-desktop` | Wrapper that gives the Claude desktop app KWallet access outside Plasma (Electron otherwise disables encrypted storage) |
 | `bin/notify-follow-tray` | Puts notifications in the screen corner next to the system tray, worked out from `panel.conf` (panel edge, and which end the tray sits at), and moves them again whenever the panel changes. `--watch` needs `inotify-tools`. A notification already on screen stays where it is: lxqt-notificationd reads the placement only when its area appears |
+| `plugins/networkmonitor/` | lxqt-panel 2.3.2's Network Monitor plugin with the negotiated link speed and duplex added to its tooltip (`Link speed 2.5 Gbit/s, full duplex`). Wi-Fi and virtual bridges show `Link speed unknown`, since the kernel reports no negotiated rate for them. `install.sh` builds it into `~/.local/lib/lxqt-panel`, which the panel searches before the system copy; the change itself is `linkspeed.patch` |
 | `bin/de-measure.sh` | Logs iGPU/NVIDIA memory, iGPU load and desktop RAM per session, for comparing desktops |
 | `system/61-amd-igpu.rules` | udev rule creating a stable `/dev/dri/amd-igpu` symlink (optional, needs root) |
 
@@ -46,6 +47,17 @@ Then, as your user:
 
 It backs up anything it replaces to `~/.local/state/lxqt-seven-backup-<date>/`.
 Log out and choose **LXQt (Wayland)** in SDDM.
+
+The link-speed network monitor is built only when its build dependencies are
+present (and the panel is 2.3.x); otherwise `install.sh` skips it:
+
+```bash
+sudo apt install --no-install-recommends cmake g++ qt6-base-dev libstatgrab-dev
+```
+
+Add the widget from the panel's *Manage Widgets* dialog. Rebuild it (re-run
+`install.sh`) after an lxqt-panel upgrade to a new release; deleting
+`~/.local/lib/lxqt-panel/libnetworkmonitor.so` brings back the stock widget.
 
 ### Machine-specific bits to adjust
 
@@ -95,6 +107,8 @@ the snap Firefox icon so it shows on the LXQt taskbar.
 ## License
 
 LGPL-2.1-or-later. The LXQt panel themes are derived from
-[lxqt-themes](https://github.com/lxqt/lxqt-themes) (LGPL-2.1+). The wallpaper
+[lxqt-themes](https://github.com/lxqt/lxqt-themes) (LGPL-2.1+), and
+`plugins/networkmonitor/` is code from
+[lxqt-panel](https://github.com/lxqt/lxqt-panel) 2.3.2 (LGPL-2.1+). The wallpaper
 is not included; `make-next-4k.py` builds it from your installed copy of KDE's
 "Next" wallpaper (CC-BY-SA-4.0, Krystian Zajdel).

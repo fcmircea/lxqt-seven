@@ -37,7 +37,7 @@ done
 
 echo "==> LXQt config (theme, palette, panel, session)"
 put "$REPO/lxqt/lxqt.conf" "$HOME/.config/lxqt/lxqt.conf"
-put "$REPO/lxqt/session.conf" "$HOME/.config/lxqt/session.conf"
+put_template "$REPO/lxqt/session.conf.in" "$HOME/.config/lxqt/session.conf"
 put_template "$REPO/lxqt/panel.conf.in" "$HOME/.config/lxqt/panel.conf"
 put_template "$REPO/pcmanfm-qt/settings.conf.in" "$HOME/.config/pcmanfm-qt/lxqt/settings.conf"
 
@@ -52,6 +52,20 @@ for f in "$REPO"/bin/*; do
     put "$f" "$HOME/.local/bin/$(basename "$f")"
     chmod +x "$HOME/.local/bin/$(basename "$f")"
 done
+
+echo "==> Network monitor plugin with link speed in its tooltip"
+# Built from lxqt-panel 2.3.2 sources; a plugin from another release may not load.
+if lxqt-panel --version 2>/dev/null | grep -q '^lxqt-panel 2\.3\.' && [ -e /usr/include/statgrab.h ] \
+   && command -v cmake >/dev/null; then
+    NETMON_BUILD="$(mktemp -d)"
+    cmake -S "$REPO/plugins/networkmonitor" -B "$NETMON_BUILD" -DCMAKE_BUILD_TYPE=Release >/dev/null \
+        && cmake --build "$NETMON_BUILD" -j >/dev/null \
+        && cmake --install "$NETMON_BUILD" >/dev/null \
+        && rm -rf "$NETMON_BUILD" \
+        || echo "   (build failed: see cmake in $NETMON_BUILD)"
+else
+    echo "   (skipped: needs lxqt-panel 2.3, cmake, qt6-base-dev and libstatgrab-dev)"
+fi
 
 echo "==> 3840x2160 wallpaper"
 python3 "$REPO/wallpaper/make-next-4k.py" || echo "   (skipped: needs python3-pil and KDE's Next wallpaper)"

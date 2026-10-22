@@ -2,3 +2,6 @@
 __userfile__=true
 compositor=labwc
 leave_confirmation=true
+
+[Environment]
+LXQTPANEL_PLUGIN_PATH=@HOME@/.local/lib/lxqt-panel

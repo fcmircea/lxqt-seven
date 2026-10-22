@@ -673,6 +673,16 @@
 
   -->
   <libinput>
+    <!-- Razer: reduced speed, adaptive acceleration. The name differs by mode:
+         cable is "Razer DeathAdder V2 Pro", wireless via the dock is "Razer Razer DeathAdder V2 Pro". -->
+    <device category="Razer DeathAdder V2 Pro">
+      <accelProfile>adaptive</accelProfile>
+      <pointerSpeed>-0.3</pointerSpeed>
+    </device>
+    <device category="Razer Razer DeathAdder V2 Pro">
+      <accelProfile>adaptive</accelProfile>
+      <pointerSpeed>-0.3</pointerSpeed>
+    </device>
     <device category="default">
       <!-- <naturalScroll>no</naturalScroll> -->
       <!-- <leftHanded>no</leftHanded> -->

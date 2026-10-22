@@ -20,7 +20,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `lxqt/panel.conf.in` | Panel layout: start menu, Quick Launch (Claude, QTerminal, file manager), grouped icon-only taskbar, tray, clock, show-desktop. No desktop switcher |
 | `lxqt/session.conf.in` | Uses labwc as the compositor, skips LXQt's first-run compositor picker, and points the panel at `~/.local/lib/lxqt-panel` for the plugin below |
 | `labwc/theme/Seven/` | labwc title bars to match: gradient active title, flat grey inactive, dark menus and Alt+Tab |
-| `labwc/rc.xml` | LXQt's default labwc config, set to the Seven theme with breeze-dark icons, plus screenshot shortcuts |
+| `labwc/rc.xml` | LXQt's default labwc config, set to the Seven theme with breeze-dark icons, plus screenshot shortcuts and the mouse speed (machine-specific, see below) |
 | `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below); starts `notify-follow-tray` |
 | `pcmanfm-qt/settings.conf.in` | Desktop wallpaper setting |
 | `wallpaper/make-next-4k.py` | Generates a 3840x2160 copy of KDE's "Next" wallpaper (Plasma otherwise loads the 5120x2880 one on 4K) |
@@ -63,6 +63,7 @@ Add the widget from the panel's *Manage Widgets* dialog. Rebuild it (re-run
 
 - `labwc/autostart`: `wlr-randr --output HDMI-A-1 --mode 3840x2160@120 --scale 1.5`. Change it to your output name, mode and scale (`wlr-randr` lists outputs).
 - `labwc/environment`: `XKB_DEFAULT_LAYOUT=ro` and `WLR_DRM_DEVICES=/dev/dri/amd-igpu`.
+- `labwc/rc.xml`, `<libinput>`: pointer speed `-0.3` with adaptive acceleration for a Razer DeathAdder V2 Pro. libinput names it differently per mode (`Razer DeathAdder V2 Pro` on the cable, `Razer Razer DeathAdder V2 Pro` through the wireless dock), so there is one block for each. Other mice use the `default` block; `libinput list-devices` shows the names.
 - iGPU pinning (optional, hybrid GPU machines): install the udev rule and point both compositors at the iGPU:
 
   ```bash

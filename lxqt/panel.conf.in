@@ -46,7 +46,7 @@ type=quicklaunch
 alignment=Left
 buttonStyle=Icon
 buttonWidth=60
-groupingEnabled=true
+groupingEnabled=false
 showGroupOnHover=true
 
 [volume]

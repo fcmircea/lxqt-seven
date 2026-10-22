@@ -28,6 +28,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `bin/claude-desktop` | Wrapper that gives the Claude desktop app KWallet access outside Plasma (Electron otherwise disables encrypted storage) |
 | `bin/notify-follow-tray` | Puts notifications in the screen corner next to the system tray, worked out from `panel.conf` (panel edge, and which end the tray sits at), and moves them again whenever the panel changes. `--watch` needs `inotify-tools`. A notification already on screen stays where it is: lxqt-notificationd reads the placement only when its area appears |
 | `plugins/networkmonitor/` | lxqt-panel 2.3.2's Network Monitor plugin with the negotiated link speed and duplex added to its tooltip (`Link speed 2.5 Gbit/s, full duplex`). Wi-Fi and virtual bridges show `Link speed unknown`, since the kernel reports no negotiated rate for them. `install.sh` builds it into `~/.local/lib/lxqt-panel`, which the panel searches before the system copy; the change itself is `linkspeed.patch` |
+| `notificationd/` | lxqt-notificationd 2.3.1 with two changes (`parking.patch`). A timed-out notification with buttons other than its default action, such as the Claude desktop app's *Allow once*, is hidden but not reported closed, and is listed in the tray bell; reopened from there it still has its original id, so a button pressed then still reaches the app, which closes it on reply. The stock daemon reports it expired, the app forgets it, and a copy reopened from the bell has dead buttons. Long words such as paths also wrap instead of being cut off. `install.sh` builds it into `~/.local/bin` and starts it in place of the system copy through `~/.config/autostart/lxqt-notifications.desktop` (from `lxqt/lxqt-notifications.desktop.in`) |
 | `bin/de-measure.sh` | Logs iGPU/NVIDIA memory, iGPU load and desktop RAM per session, for comparing desktops |
 | `system/61-amd-igpu.rules` | udev rule creating a stable `/dev/dri/amd-igpu` symlink (optional, needs root) |
 
@@ -58,6 +59,17 @@ sudo apt install --no-install-recommends cmake g++ qt6-base-dev libstatgrab-dev
 Add the widget from the panel's *Manage Widgets* dialog. Rebuild it (re-run
 `install.sh`) after an lxqt-panel upgrade to a new release; deleting
 `~/.local/lib/lxqt-panel/libnetworkmonitor.so` brings back the stock widget.
+
+The notification daemon is built the same way, when its dependencies are present
+(and the installed lxqt-notificationd is 2.3.x):
+
+```bash
+sudo apt install --no-install-recommends cmake g++ qt6-base-dev liblxqt2-dev libkf6windowsystem-dev liblayershellqtinterface-dev
+```
+
+It takes over at the next login. Rebuild it after an lxqt-notificationd upgrade
+to a new release; deleting `~/.config/autostart/lxqt-notifications.desktop`
+brings back the stock daemon.
 
 ### Machine-specific bits to adjust
 
@@ -108,8 +120,10 @@ the snap Firefox icon so it shows on the LXQt taskbar.
 ## License
 
 LGPL-2.1-or-later. The LXQt panel themes are derived from
-[lxqt-themes](https://github.com/lxqt/lxqt-themes) (LGPL-2.1+), and
+[lxqt-themes](https://github.com/lxqt/lxqt-themes) (LGPL-2.1+),
 `plugins/networkmonitor/` is code from
-[lxqt-panel](https://github.com/lxqt/lxqt-panel) 2.3.2 (LGPL-2.1+). The wallpaper
+[lxqt-panel](https://github.com/lxqt/lxqt-panel) 2.3.2 (LGPL-2.1+), and
+`notificationd/` is code from
+[lxqt-notificationd](https://github.com/lxqt/lxqt-notificationd) 2.3.1 (LGPL-2.1+). The wallpaper
 is not included; `make-next-4k.py` builds it from your installed copy of KDE's
 "Next" wallpaper (CC-BY-SA-4.0, Krystian Zajdel).

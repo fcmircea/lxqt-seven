@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+TryExec=@HOME@/.local/bin/lxqt-notificationd
+Exec=@HOME@/.local/bin/lxqt-notificationd
+OnlyShowIn=LXQt;
+X-LXQt-Module=true
+Name=Notification Daemon
+Comment=Patched lxqt-notificationd from lxqt-seven (notificationd/)

@@ -69,6 +69,23 @@ else
     echo "   (skipped: needs lxqt-panel 2.3, cmake, qt6-base-dev and libstatgrab-dev)"
 fi
 
+echo "==> Notification daemon that keeps timed-out notifications with buttons answerable"
+# Built from lxqt-notificationd 2.3.1 sources; started instead of the system copy
+# through an autostart override, written only once the build has installed.
+if /usr/bin/lxqt-notificationd --version 2>/dev/null | grep -q '^lxqt-notificationd 2\.3\.' \
+   && [ -e /usr/include/KF6/KWindowSystem/KWindowSystem ] && [ -e /usr/include/LayerShellQt/Window ] \
+   && command -v cmake >/dev/null; then
+    NOTIFYD_BUILD="$(mktemp -d)"
+    cmake -S "$REPO/notificationd" -B "$NOTIFYD_BUILD" -DCMAKE_BUILD_TYPE=Release >/dev/null \
+        && cmake --build "$NOTIFYD_BUILD" -j >/dev/null \
+        && cmake --install "$NOTIFYD_BUILD" >/dev/null \
+        && put_template "$REPO/lxqt/lxqt-notifications.desktop.in" "$HOME/.config/autostart/lxqt-notifications.desktop" \
+        && rm -rf "$NOTIFYD_BUILD" \
+        || echo "   (build failed: see cmake in $NOTIFYD_BUILD)"
+else
+    echo "   (skipped: needs lxqt-notificationd 2.3, cmake, libkf6windowsystem-dev and liblayershellqtinterface-dev)"
+fi
+
 echo "==> 3840x2160 wallpaper"
 python3 "$REPO/wallpaper/make-next-4k.py" || echo "   (skipped: needs python3-pil and KDE's Next wallpaper)"
 

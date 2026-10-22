@@ -1,0 +1,401 @@
+--- a/src/notification.cpp	2025-12-04 19:53:57.000000000 +0200
++++ b/src/notification.cpp	2026-10-22 19:45:48.591070300 +0300
+@@ -46,6 +46,40 @@
+ 
+ #define ICONSIZE QSize(32, 32)
+ 
++// QLabel wraps only at spaces, so a word wider than the notification (a path, a
++// command) is cut off. A zero-width space between the characters of a long word
++// lets it wrap anywhere. Tags are copied as they are, and an entity counts as one character.
++static QString breakLongWords(const QString &text)
++{
++    QString out;
++    QStringList word;
++    auto flush = [&] {
++        out += word.join(word.size() > 20 ? QString(QChar(0x200B)) : QString());
++        word.clear();
++    };
++    for (int i = 0; i < text.size(); ++i)
++    {
++        const QChar c = text.at(i);
++        int end = c == QL1C('<') ? text.indexOf(QL1C('>'), i) : -1;
++        if (end != -1 || c.isSpace())
++        {
++            flush();
++            if (end == -1)
++                end = i;
++            out += text.mid(i, end - i + 1);
++            i = end;
++            continue;
++        }
++        end = c == QL1C('&') ? text.indexOf(QL1C(';'), i) : -1;
++        if (end == -1 || end - i > 8)
++            end = c.isHighSurrogate() && i + 1 < text.size() ? i + 1 : i;
++        word << text.mid(i, end - i + 1);
++        i = end;
++    }
++    flush();
++    return out;
++}
++
+ 
+ Notification::Notification(const QString &application,
+                            const QString &summary, const QString &body,
+@@ -146,7 +180,7 @@
+     // summary
+     summaryLabel->setVisible(!summary.isEmpty() && application != summary);
+     summaryLabel->setFixedWidth(summaryLabel->width());
+-    summaryLabel->setText(summary);
++    summaryLabel->setText(breakLongWords(summary));
+ 
+     // body
+     bodyLabel->setVisible(!body.isEmpty());
+@@ -155,7 +189,7 @@
+     //Body - This is a multi-line body of text. Each line is a paragraph, server implementations are free to word wrap them as they see fit.
+     //XXX: remove all unsupported tags?!? (supported <b>, <i>, <u>, <a>, <img>)
+     QString formatted(body);
+-    bodyLabel->setText(formatted.replace(QL1C('\n'), QStringLiteral("<br/>")));
++    bodyLabel->setText(breakLongWords(formatted.replace(QL1C('\n'), QStringLiteral("<br/>"))));
+ 
+     // Timeout
+     // Special values:
+@@ -218,12 +252,34 @@
+ 
+ QString Notification::summary() const
+ {
+-    return summaryLabel->text();
++    return summaryLabel->text().remove(QChar(0x200B));
+ }
+ 
+ QString Notification::body() const
+ {
+-    return bodyLabel->text();
++    return bodyLabel->text().remove(QChar(0x200B));
++}
++
++bool Notification::hasActionButtons() const
++{
++    for (int i = 0; i < m_actions.count(); i += 2)
++    {
++        if (m_actions.at(i) != QL1S("default"))
++            return true;
++    }
++    return false;
++}
++
++void Notification::stopTimer()
++{
++    if (m_timer)
++        m_timer->stop();
++}
++
++void Notification::restartTimer()
++{
++    if (m_timer)
++        m_timer->start(m_timeout);
+ }
+ 
+ void Notification::closeButton_clicked()
+--- a/src/notification.h	2025-12-04 19:53:57.000000000 +0200
++++ b/src/notification.h	2026-10-22 19:45:19.661073800 +0300
+@@ -81,6 +81,11 @@
+         return m_hints;
+     }
+ 
++    //! True if there is an action other than "default", i.e. a choice the sender waits for.
++    bool hasActionButtons() const;
++    void stopTimer();
++    void restartTimer();
++
+ signals:
+     //! the server set timeout passed. Notification should close itself.
+     void timeout();
+--- a/src/notificationlayout.cpp	2025-12-04 19:53:57.000000000 +0200
++++ b/src/notificationlayout.cpp	2026-10-22 19:46:12.957910100 +0300
+@@ -87,6 +87,8 @@
+         // TODO/FIXME: it can be deleted by timer in this block. Locking?
+         Notification *n = m_notifications[id];
+         n->setValues(application, summary, body, icon, timeout, actions, hints);
++        if (m_parked.remove(id) && showNotification) // an update brings it back
++            n->show();
+     }
+     else
+     {
+@@ -97,7 +99,8 @@
+         while (it.hasNext())
+         {
+             it.next();
+-            if (it.value()->application() == application
++            if (!m_parked.contains(it.key())
++                    && it.value()->application() == application
+                     && it.value()->summary() == summary
+                     && it.value()->body() == body)
+             {
+@@ -137,13 +140,14 @@
+ // Can be called when the do-not-disturb mode ends.
+ void NotificationLayout::showAllNotifications()
+ {
+-    if (m_notifications.isEmpty())
++    if (m_notifications.count() == m_parked.count())
+         return;
+     QHashIterator<uint, Notification*> it(m_notifications);
+     while (it.hasNext())
+     {
+         it.next();
+-        it.value()->show();
++        if (!m_parked.contains(it.key()))
++            it.value()->show();
+     }
+     // as in NotificationLayout::addNotification()
+     checkHeight();
+@@ -161,7 +165,43 @@
+         return;
+     }
+ 
+-    removeNotification(m_notifications.key(n), 1);
++    const uint id = m_notifications.key(n);
++    // The sender forgets a notification once it is reported closed, so park one whose
++    // buttons it still waits for. Without the tray list (unattendedMaxNum 0) it could not be reopened.
++    if (m_unattendedMaxNum > 0 && n->hasActionButtons())
++    {
++        n->stopTimer();
++        n->hide();
++        m_parked.insert(id);
++        checkHeight();
++        emit notificationParked(id);
++        return;
++    }
++    removeNotification(id, 1);
++}
++
++void NotificationLayout::unparkNotification(uint id)
++{
++    if (!m_parked.remove(id))
++        return;
++    Notification *n = m_notifications.value(id);
++    n->show();
++    n->restartTimer();
++    checkHeight();
++    emit notificationAvailable();
++}
++
++void NotificationLayout::closeParkedNotifications()
++{
++    const auto ids = m_parked.values();
++    for (uint id : ids)
++        removeNotification(id, 2);
++}
++
++QString NotificationLayout::parkedText(uint id) const
++{
++    Notification *n = m_notifications.value(id);
++    return n ? n->application() + QL1S(": ") + n->summary() : QString();
+ }
+ 
+ void NotificationLayout::removeNotificationUser()
+@@ -178,6 +218,7 @@
+ 
+ void NotificationLayout::removeNotification(uint key, uint reason)
+ {
++    m_parked.remove(key);
+     Notification *n = m_notifications.take(key);
+     if (!n)
+     {
+@@ -248,6 +289,8 @@
+     while (it.hasNext())
+     {
+         it.next();
++        if (m_parked.contains(it.key()))
++            continue;
+         // *2 is mandatory here to prevent cropping of widgets
+         //  with enforced small height
+         h += it.value()->height() + m_layout->spacing() * 2;
+--- a/src/notificationlayout.h	2025-12-04 19:53:57.000000000 +0200
++++ b/src/notificationlayout.h	2026-10-22 19:46:21.056189300 +0300
+@@ -29,6 +29,7 @@
+ #define NotificationLayout_H
+ 
+ #include "notification.h"
++#include <QSet>
+ 
+ 
+ class NotificationLayout : public QWidget
+@@ -67,7 +68,18 @@
+ 
+     void showAllNotifications();
+ 
++    /*! A timed-out notification with action buttons is parked instead of closed:
++     * hidden, but still open for its sender, so a choice made after reopening it
++     * from the tray still reaches the sender.
++     */
++    void unparkNotification(uint id);
++    void closeParkedNotifications();
++    QString parkedText(uint id) const;
++
+ signals:
++    //! Notification id timed out and was parked; see \c unparkNotification()
++    void notificationParked(uint id);
++
+     //! All \c Notification instances are closed
+     void allNotificationsClosed();
+     //! At least one \c Notification instance is available and needs to be shown
+@@ -104,6 +116,7 @@
+ 
+ private:
+     QHash<uint, Notification*> m_notifications;
++    QSet<uint> m_parked;
+     QVBoxLayout *m_layout;
+     int m_unattendedMaxNum;
+     bool m_doNotDisturb;
+--- a/src/notifyd.cpp	2025-12-04 19:53:57.000000000 +0200
++++ b/src/notifyd.cpp	2026-10-22 19:47:06.484756400 +0300
+@@ -54,8 +54,11 @@
+     // feedback for original caller
+     connect(m_area->layout(), &NotificationLayout::notificationClosed, this,
+             [this] (uint id, uint reason, const QString& /*date*/) {
++                removeParkedFromTray(id);
+                 emit NotificationClosed(id, reason);
+             });
++    connect(m_area->layout(), &NotificationLayout::notificationParked,
++            this, &Notifyd::addParkedToTray);
+     connect(m_area->layout(), &NotificationLayout::notificationClosed,
+             this, &Notifyd::addToUnattendedList);
+     connect(m_area->layout(), &NotificationLayout::actionInvoked,
+@@ -188,6 +191,7 @@
+     {
+         if (maxNum == 0 )
+         { // remove the tray icon
++            m_area->layout()->closeParkedNotifications();
+             m_trayMenu->deleteLater();
+             m_trayIcon->deleteLater();
+         }
+@@ -273,6 +277,7 @@
+     // "Clear All"
+     action = m_trayMenu->addAction(QIcon::fromTheme(QSL("edit-clear")), tr("Clear All"));
+     connect(action, &QAction::triggered, m_trayMenu, [this] {
++        m_area->layout()->closeParkedNotifications();
+         m_trayIcon->setVisible(false);
+         m_trayMenu->deleteLater();
+         QSettings(m_area->layout()->cacheFile(), QSettings::IniFormat).clear();
+@@ -337,12 +342,20 @@
+             // Add it to the top of the current tray menu, removing the oldest items if the list is full.
+             // Two separators, "Clear All", "Do Not Disturb" and "Options" exist after all items.
+             const int fixedItems = 5;
+-            QList<QAction*> actions = m_trayMenu->actions();
+-            while (actions.size() >= m_area->layout()->getUnattendedMaxNum() + fixedItems)
++            // Only saved items have data; parked notifications are still open and stay.
++            QList<QAction*> saved;
++            const auto menuActions = m_trayMenu->actions();
++            for (QAction *a : menuActions)
++            {
++                if (a->data().isValid())
++                    saved << a;
++            }
++            while (saved.size() >= m_area->layout()->getUnattendedMaxNum())
+             {
+-                m_trayMenu->removeAction(actions.at(actions.size() - fixedItems -1));
+-                delete actions.takeAt(actions.size() - fixedItems - 1);
++                m_trayMenu->removeAction(saved.last());
++                delete saved.takeLast();
+             }
++            QList<QAction*> actions = m_trayMenu->actions();
+             QSettings list(m_area->layout()->cacheFile(), QSettings::IniFormat);
+             list.beginGroup(date);
+             QLocale l;
+@@ -361,23 +374,68 @@
+     }
+ }
+ 
++void Notifyd::addParkedToTray(uint id)
++{
++    if (m_trayIcon.isNull() || m_trayMenu.isNull())
++    {
++        if (!QSystemTrayIcon::isSystemTrayAvailable())
++            return;
++        createTrayIcon();
++    }
++    QAction *action = new QAction(QLocale().toString(QDateTime::currentDateTime(), QLocale::ShortFormat)
++                                  + QL1S(" - ") + m_area->layout()->parkedText(id), m_trayMenu);
++    action->setProperty("parkedId", id);
++    const QList<QAction*> actions = m_trayMenu->actions();
++    m_trayMenu->insertAction(actions.isEmpty() ? nullptr : actions.first(), action);
++    connect(action, &QAction::triggered, this, &Notifyd::restoreUnattended);
++    m_trayIcon->setVisible(true);
++    m_trayIcon->setToolTip(tr("%n Unattended Notification(s)", "",
++                               m_trayMenu->actions().size() - 5));
++}
++
++void Notifyd::removeParkedFromTray(uint id)
++{
++    if (m_trayMenu.isNull())
++        return;
++    const auto actions = m_trayMenu->actions();
++    for (QAction *action : actions)
++    {
++        if (action->property("parkedId") == QVariant(id))
++        {
++            takeTrayAction(action);
++            return;
++        }
++    }
++}
++
++void Notifyd::takeTrayAction(QAction *action)
++{
++    m_trayMenu->removeAction(action);
++    delete action;
++    const int fixedItems = 5;
++    if (m_trayMenu->actions().size() == fixedItems)
++    {
++        m_trayIcon->setVisible(false);
++        // WARNING: If the menu isn't deleted here, it won't be shown later (a Qt bug?).
++        m_trayMenu->deleteLater();
++    }
++    else
++        m_trayIcon->setToolTip(tr("%n Unattended Notification(s)", "",
++                                   m_trayMenu->actions().size() - fixedItems));
++}
++
+ void Notifyd::restoreUnattended()
+ {
+     if (QAction *action = qobject_cast<QAction*>(sender()))
+     {
++        const QVariant parkedId = action->property("parkedId");
+         const QString date = action->data().toString();
+-        m_trayMenu->removeAction(action);
+-        delete action;
+-        const int fixedItems = 5;
+-        if (m_trayMenu->actions().size() == fixedItems)
++        takeTrayAction(action);
++        if (parkedId.isValid())
+         {
+-            m_trayIcon->setVisible(false);
+-            // WARNING: If the menu isn't deleted here, it won't be shown later (a Qt bug?).
+-            m_trayMenu->deleteLater();
++            m_area->layout()->unparkNotification(parkedId.toUInt());
++            return;
+         }
+-        else
+-            m_trayIcon->setToolTip(tr("%n Unattended Notification(s)", "",
+-                                       m_trayMenu->actions().size() - fixedItems));
+         QSettings list(m_area->layout()->cacheFile(), QSettings::IniFormat);
+         if (list.childGroups().contains(date))
+         {
+--- a/src/notifyd.h	2025-12-04 19:53:57.000000000 +0200
++++ b/src/notifyd.h	2026-10-22 19:46:38.827802200 +0300
+@@ -144,11 +144,15 @@
+     bool m_doNotDisturb;
+ 
+     void createTrayIcon();
++    //! Removes an item from the tray menu, hiding the tray icon when no item is left
++    void takeTrayAction(QAction *action);
+ 
+ private slots:
+     void reloadSettings();
+     void checkTray();
+     void addToUnattendedList(uint id, uint reason, const QString &date);
++    void addParkedToTray(uint id);
++    void removeParkedFromTray(uint id);
+     void restoreUnattended();
+     void updateIcon();
+ };

@@ -31,6 +31,7 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `notificationd/` | lxqt-notificationd 2.3.1 with two changes (`parking.patch`). A timed-out notification with buttons other than its default action, such as the Claude desktop app's *Allow once*, is hidden but not reported closed, and is listed in the tray bell; reopened from there it still has its original id, so a button pressed then still reaches the app, which closes it on reply. The stock daemon reports it expired, the app forgets it, and a copy reopened from the bell has dead buttons. Long words such as paths also wrap instead of being cut off. `install.sh` builds it into `~/.local/bin` and starts it in place of the system copy through `~/.config/autostart/lxqt-notifications.desktop` (from `lxqt/lxqt-notifications.desktop.in`) |
 | `bin/de-measure.sh` | Logs iGPU/NVIDIA memory, iGPU load and desktop RAM per session, for comparing desktops |
 | `system/61-amd-igpu.rules` | udev rule creating a stable `/dev/dri/amd-igpu` symlink (optional, needs root) |
+| `system/grub/` | The [Primitivistical](https://github.com/fffred/primitivistical-grub) GRUB theme rebuilt to look clean on a 4K panel, with its own installer (optional, needs root). See [GRUB theme](#grub-theme-optional) |
 
 ## Install
 
@@ -86,6 +87,54 @@ brings back the stock daemon.
 
   Remove the `WLR_DRM_DEVICES` line from `labwc/environment` if you don't use this.
 
+## GRUB theme (optional)
+
+![GRUB menu](screenshots/grub.png)
+
+Primitivistical as shipped looks jagged on a 4K panel: GRUB fonts are 1-bit
+bitmaps, and with no font named in `theme.txt` GRUB falls back to its unicode
+pixel font; and GRUB shrinks the 256–512 px distro logos to 25 px with no
+smoothing. The copy in `system/grub/` names a 20 px DejaVu Sans built with
+`grub-mkfont`, has the logos pre-scaled to exactly 32 px and 40 px rows, all
+sized for GRUB at 1920x1080, which the monitor doubles to 3840x2160 exactly.
+
+Native 4K was tried and looks sharper, but on this machine the menu was sluggish
+and arrow keys registered twice: each move makes GRUB repaint the menu box and
+copy those screen rows through the firmware's GOP framebuffer, and key repeat
+piles up while it is busy. For the same reason the menu box is sized to 8 rows
+rather than upstream's 70% of the screen, and upstream's fully transparent
+`item_*.png` row backgrounds, alpha-blended across every row on each move, are
+left out.
+
+```bash
+sudo system/grub/install.sh
+```
+
+It backs up `/etc/default/grub` and the installed theme, sets `GRUB_THEME` and
+`GRUB_GFXMODE="1920x1080,auto"`, and runs `update-grub`. For a firmware that
+redraws 4K quickly, build the 4K sizes and pass the mode:
+`system/grub/build-theme.sh <upstream>/Primitivistical 40 64 80`, then
+`sudo system/grub/install.sh 3840x2160,1920x1080`. The menu only shows with
+`GRUB_TIMEOUT_STYLE=menu`, or when you press Esc during boot while it is `hidden`.
+
+To check which mode GRUB actually got, read the firmware framebuffer the kernel
+took over after the next boot:
+
+```bash
+cat /sys/class/drm/card*-Unknown-1/modes
+```
+
+At the GRUB menu, `c` and then `videoinfo` lists every mode the firmware offers.
+
+`build-theme.sh` regenerates the theme from the upstream download (font, icon
+and row sizes are arguments). `preview.sh` screenshots a theme exactly as GRUB
+draws it, by booting a throwaway UEFI GRUB image in QEMU, so changes can be
+checked without rebooting:
+
+```bash
+sudo apt install --no-install-recommends grub-efi-amd64-bin mtools xorriso qemu-system-x86 ovmf
+```
+
 ## Keyboard shortcuts (labwc)
 
 | Keys | Action |
@@ -127,3 +176,8 @@ LGPL-2.1-or-later. The LXQt panel themes are derived from
 [lxqt-notificationd](https://github.com/lxqt/lxqt-notificationd) 2.3.1 (LGPL-2.1+). The wallpaper
 is not included; `make-next-4k.py` builds it from your installed copy of KDE's
 "Next" wallpaper (CC-BY-SA-4.0, Krystian Zajdel).
+
+`system/grub/Primitivistical/` is a modified copy of Primitivistical by fffred,
+GPL-3.0-or-later (`system/grub/Primitivistical/COPYING`). Its logos are by
+Aha-Soft (CC BY 2.0), except the Ubuntu MATE one (CC BY-SA 4.0, Ubuntu MATE);
+the font is generated from DejaVu Sans (Bitstream Vera license).

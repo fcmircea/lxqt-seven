@@ -45,7 +45,7 @@ echo "==> labwc theme and config"
 for f in "$REPO"/labwc/theme/Seven/labwc/*; do
     put "$f" "$HOME/.local/share/themes/Seven/labwc/$(basename "$f")"
 done
-for f in rc.xml autostart environment menu.xml themerc-override; do
+for f in rc.xml autostart shutdown environment menu.xml themerc-override; do
     put "$REPO/labwc/$f" "$HOME/.config/labwc/$f"
 done
 

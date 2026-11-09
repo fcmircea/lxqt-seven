@@ -36,3 +36,7 @@ wlr-randr --output HDMI-A-1 --mode 3840x2160@120 --scale 1.5 >/dev/null 2>&1 &
 
 # Notifications follow the system tray: same screen corner, re-checked when the panel moves
 "$HOME/.local/bin/notify-follow-tray" --watch >/dev/null 2>&1 &
+
+# Office lamp on (HA webhook Lon); labwc/shutdown sends Loff. HA by LAN address only:
+# the bare name homeassistant resolves to a public host through the search domain.
+curl -sS -o /dev/null --max-time 5 --retry 5 --retry-connrefused --retry-delay 2 -X POST http://192.168.1.110:8123/api/webhook/Lon >/dev/null 2>&1 &

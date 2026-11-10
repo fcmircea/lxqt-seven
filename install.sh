@@ -49,6 +49,10 @@ for f in rc.xml autostart shutdown environment menu.xml themerc-override; do
     put "$REPO/labwc/$f" "$HOME/.config/labwc/$f"
 done
 
+echo "==> Office lamp unit (started by labwc/autostart, not enabled)"
+put "$REPO/systemd/ha-login-light-lxqt.service" "$HOME/.config/systemd/user/ha-login-light-lxqt.service"
+systemctl --user daemon-reload 2>/dev/null || true
+
 echo "==> scripts (snip, claude-desktop wrapper, de-measure.sh)"
 for f in "$REPO"/bin/*; do
     put "$f" "$HOME/.local/bin/$(basename "$f")"

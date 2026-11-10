@@ -1,0 +1,15 @@
+# Office lamp follows the LXQt session: HA webhook Lon when started, Loff when
+# stopped. labwc/autostart starts it at login and labwc/shutdown stops it at
+# logout; at power-off and reboot the user manager stops it, before the network
+# goes down. Not enabled: only the LXQt session starts it. All lamp behaviour
+# lives in HA (automations Lon/Loff). HA by LAN address only: the bare name
+# homeassistant resolves to a public host through the search domain.
+[Unit]
+Description=Office lamp on at LXQt login, off at logout, power-off and reboot (HA webhooks)
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/curl -sS -o /dev/null -w "Lon HTTP %%{http_code}\n" --max-time 5 --retry 5 --retry-connrefused --retry-delay 2 -X POST http://192.168.1.110:8123/api/webhook/Lon
+ExecStop=/usr/bin/curl -sS -o /dev/null -w "Loff HTTP %%{http_code}\n" --max-time 5 -X POST http://192.168.1.110:8123/api/webhook/Loff
+TimeoutStopSec=10

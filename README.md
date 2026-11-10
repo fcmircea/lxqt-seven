@@ -21,8 +21,9 @@ memory each desktop uses on a hybrid AMD iGPU + NVIDIA machine.
 | `lxqt/session.conf.in` | Uses labwc as the compositor, skips LXQt's first-run compositor picker, and points the panel at `~/.local/lib/lxqt-panel` for the plugin below |
 | `labwc/theme/Seven/` | labwc title bars to match: gradient active title, flat grey inactive, dark menus and Alt+Tab. The `.xbm` button glyphs are 8x8, about 30% larger than labwc's built-in 6x6 ones; themerc has no size key, so the bitmap size is the control, and the themerc colours still apply |
 | `labwc/rc.xml` | LXQt's default labwc config, set to the Seven theme with breeze-dark icons, plus screenshot shortcuts and the mouse speed (machine-specific, see below) |
-| `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below); starts `notify-follow-tray`; turns the office lamp on through the Home Assistant webhook `Lon` (machine-specific) |
-| `labwc/shutdown` | Run by labwc as the session ends: turns the office lamp off through the Home Assistant webhook `Loff` (machine-specific) |
+| `labwc/autostart`, `labwc/environment` | Monitor mode and scale, keyboard layout, iGPU pinning (machine-specific, see below); starts `notify-follow-tray`; starts the office lamp unit |
+| `labwc/shutdown` | Run by labwc when the session ends normally (logout): stops the office lamp unit |
+| `systemd/ha-login-light-lxqt.service` | Office lamp: Home Assistant webhook `Lon` when started, `Loff` when stopped (machine-specific). Started by `labwc/autostart`, not enabled; stopped by `labwc/shutdown` at logout and by the user manager at power-off and reboot, which kill the session before labwc can run `shutdown` |
 | `pcmanfm-qt/settings.conf.in` | Desktop wallpaper setting |
 | `wallpaper/make-next-4k.py` | Generates a 3840x2160 copy of KDE's "Next" wallpaper (Plasma otherwise loads the 5120x2880 one on 4K) |
 | `bin/snip` | Snipping-tool style screenshots with `grim` + `slurp`, saved to `~/Pictures/Screenshots` and copied to the clipboard |

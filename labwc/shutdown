@@ -1,5 +1,6 @@
 # Run by labwc as it exits, which in this session is when lxqt-session ends
-# (logout, and shutdown or reboot from the LXQt leave dialog).
+# normally (logout). Power-off and reboot kill the session instead, so they
+# rely on the user manager stopping the unit below.
 
-# Office lamp off (HA webhook Loff); labwc/autostart sends Lon.
-curl -sS -o /dev/null --max-time 3 -X POST http://192.168.1.110:8123/api/webhook/Loff >/dev/null 2>&1
+# Office lamp off: stops ha-login-light-lxqt.service (HA webhook Loff).
+systemctl --user stop ha-login-light-lxqt.service >/dev/null 2>&1
